@@ -1,0 +1,288 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.page{font-family:var(--font-sans);padding:10px 6px 16px;background:#0d2060;border-radius:12px;min-height:600px;}
+.hdr{text-align:center;color:#fff;font-size:13px;font-weight:500;padding:6px 0 10px;letter-spacing:0.02em;}
+.hdr span{color:#f5c842;font-size:11px;font-weight:400;display:block;margin-top:1px;}
+.bracket-wrap{display:flex;align-items:center;justify-content:center;gap:0;width:100%;}
+.side{display:flex;align-items:center;gap:0;flex:1;}
+.side.right{flex-direction:row-reverse;}
+.round-col{display:flex;flex-direction:column;justify-content:space-around;gap:0;}
+.conn{display:flex;flex-direction:column;justify-content:space-around;align-items:center;}
+.center-col{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0 4px;}
+.trophy-box{background:#1a3a8a;border:1px solid #f5c842;border-radius:8px;padding:8px 10px;text-align:center;}
+.trophy-icon{font-size:26px;line-height:1;}
+.trophy-lbl{color:#f5c842;font-size:9px;font-weight:500;margin-top:2px;}
+.final-slots{display:flex;flex-direction:column;gap:4px;align-items:center;}
+
+.slot{
+  width:72px;height:26px;border-radius:5px;border:1.5px dashed rgba(255,255,255,0.3);
+  display:flex;align-items:center;justify-content:center;cursor:default;
+  background:rgba(255,255,255,0.06);font-size:9px;color:rgba(255,255,255,0.35);
+  transition:border-color 0.15s,background 0.15s;position:relative;flex-shrink:0;
+  margin:1px 0;
+}
+.slot.has-team{border-style:solid;border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.12);}
+.slot.drag-over{border-color:#f5c842;background:rgba(245,200,66,0.15);}
+.slot.winner{border-color:#f5c842;background:rgba(245,200,66,0.1);}
+.slot img{width:28px;height:18px;object-fit:cover;border-radius:2px;flex-shrink:0;}
+.slot .sname{font-size:8px;font-weight:500;color:#fff;margin-left:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:34px;}
+
+.round-lbl{color:rgba(255,255,255,0.45);font-size:8px;text-align:center;margin-bottom:3px;letter-spacing:0.04em;}
+
+.team-row{display:flex;align-items:center;gap:4px;padding:2px 4px;}
+.team-row img{width:22px;height:15px;object-fit:cover;border-radius:2px;flex-shrink:0;}
+.team-row .tname{font-size:9px;color:#fff;white-space:nowrap;}
+
+.pool-section{margin-top:12px;border-top:1px solid rgba(255,255,255,0.12);padding-top:10px;}
+.pool-lbl{color:rgba(255,255,255,0.5);font-size:9px;text-align:center;margin-bottom:7px;letter-spacing:0.03em;}
+.pool-grid{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;}
+.chip{
+  display:flex;align-items:center;gap:3px;padding:3px 6px;
+  background:rgba(255,255,255,0.1);border:0.5px solid rgba(255,255,255,0.2);
+  border-radius:5px;cursor:grab;user-select:none;
+  font-size:9px;color:#fff;white-space:nowrap;transition:opacity 0.1s,background 0.1s;
+}
+.chip:hover{background:rgba(255,255,255,0.18);}
+.chip.dragging{opacity:0.3;}
+.chip img{width:18px;height:12px;object-fit:cover;border-radius:2px;}
+.hint-lbl{color:rgba(255,255,255,0.3);font-size:8px;text-align:center;margin-top:6px;}
+.reset-btn{display:block;margin:8px auto 0;font-size:10px;padding:4px 14px;cursor:pointer;
+  border:0.5px solid rgba(255,255,255,0.25);border-radius:5px;
+  background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);}
+.reset-btn:hover{background:rgba(255,255,255,0.14);}
+</style>
+
+<div class="page">
+<div class="hdr">2026 FIFA 世界杯 · 32强淘汰赛<span>2026.6.12 — 7.20 · 拖拽国旗预测晋级路线</span></div>
+<div id="root"></div>
+<div class="pool-section">
+  <div class="pool-lbl">参赛球队 — 拖拽到赛程格子</div>
+  <div class="pool-grid" id="pool"></div>
+  <div class="hint-lbl">双击格子取消放置</div>
+  <button class="reset-btn" onclick="resetAll()">↺ 重置全部</button>
+</div>
+</div>
+
+<script>
+const LEFT = [
+  {id:'de',name:'德国',flag:'https://flagcdn.com/w40/de.png'},
+  {id:'py',name:'巴拉圭',flag:'https://flagcdn.com/w40/py.png'},
+  {id:'fr',name:'法国',flag:'https://flagcdn.com/w40/fr.png'},
+  {id:'se',name:'瑞典',flag:'https://flagcdn.com/w40/se.png'},
+  {id:'za',name:'南非',flag:'https://flagcdn.com/w40/za.png'},
+  {id:'ca',name:'加拿大',flag:'https://flagcdn.com/w40/ca.png'},
+  {id:'nl',name:'荷兰',flag:'https://flagcdn.com/w40/nl.png'},
+  {id:'ma',name:'摩洛哥',flag:'https://flagcdn.com/w40/ma.png'},
+  {id:'pt',name:'葡萄牙',flag:'https://flagcdn.com/w40/pt.png'},
+  {id:'hr',name:'克罗地亚',flag:'https://flagcdn.com/w40/hr.png'},
+  {id:'es',name:'西班牙',flag:'https://flagcdn.com/w40/es.png'},
+  {id:'at',name:'奥地利',flag:'https://flagcdn.com/w40/at.png'},
+  {id:'us',name:'美国',flag:'https://flagcdn.com/w40/us.png'},
+  {id:'ba',name:'波黑',flag:'https://flagcdn.com/w40/ba.png'},
+  {id:'be',name:'比利时',flag:'https://flagcdn.com/w40/be.png'},
+  {id:'sn',name:'塞内加尔',flag:'https://flagcdn.com/w40/sn.png'},
+];
+const RIGHT = [
+  {id:'br',name:'巴西',flag:'https://flagcdn.com/w40/br.png'},
+  {id:'jp',name:'日本',flag:'https://flagcdn.com/w40/jp.png'},
+  {id:'ci',name:'科特迪瓦',flag:'https://flagcdn.com/w40/ci.png'},
+  {id:'no',name:'挪威',flag:'https://flagcdn.com/w40/no.png'},
+  {id:'mx',name:'墨西哥',flag:'https://flagcdn.com/w40/mx.png'},
+  {id:'ec',name:'厄瓜多尔',flag:'https://flagcdn.com/w40/ec.png'},
+  {id:'gb-eng',name:'英格兰',flag:'https://flagcdn.com/w40/gb-eng.png'},
+  {id:'cd',name:'刚果(金)',flag:'https://flagcdn.com/w40/cd.png'},
+  {id:'ar',name:'阿根廷',flag:'https://flagcdn.com/w40/ar.png'},
+  {id:'cv',name:'佛得角',flag:'https://flagcdn.com/w40/cv.png'},
+  {id:'au',name:'澳大利亚',flag:'https://flagcdn.com/w40/au.png'},
+  {id:'eg',name:'埃及',flag:'https://flagcdn.com/w40/eg.png'},
+  {id:'ch',name:'瑞士',flag:'https://flagcdn.com/w40/ch.png'},
+  {id:'dz',name:'阿尔及利亚',flag:'https://flagcdn.com/w40/dz.png'},
+  {id:'co',name:'哥伦比亚',flag:'https://flagcdn.com/w40/co.png'},
+  {id:'gh',name:'加纳',flag:'https://flagcdn.com/w40/gh.png'},
+];
+const ALL_TEAMS = [...LEFT,...RIGHT];
+
+const ROUND_COUNTS = [16,8,4,2];
+const ROUND_LABELS_L = ['16强','8强','4强','半决赛'];
+const ROUND_LABELS_R = ['16强','8强','4强','半决赛'];
+
+let slots = {};
+let dragging = null;
+let dragSrc = null;
+
+function sid(side,round,idx){return `${side}_${round}_${idx}`;}
+
+function buildLayout(){
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+
+  const wrap = document.createElement('div');
+  wrap.style.cssText='display:flex;align-items:center;justify-content:center;gap:0;width:100%;';
+
+  const leftSide = buildSide('L', ROUND_COUNTS, ROUND_LABELS_L, false);
+  const center = buildCenter();
+  const rightSide = buildSide('R', ROUND_COUNTS, ROUND_LABELS_R, true);
+
+  wrap.appendChild(leftSide);
+  wrap.appendChild(center);
+  wrap.appendChild(rightSide);
+  root.appendChild(wrap);
+}
+
+function buildSide(side, counts, labels, reversed){
+  const div = document.createElement('div');
+  div.style.cssText='display:flex;align-items:stretch;gap:0;flex:1;'+(reversed?'flex-direction:row-reverse;':'');
+
+  counts.forEach((count,ri)=>{
+    const col = document.createElement('div');
+    col.style.cssText='display:flex;flex-direction:column;align-items:center;flex-shrink:0;';
+
+    const lbl = document.createElement('div');
+    lbl.className='round-lbl';
+    lbl.textContent = labels[ri];
+    col.appendChild(lbl);
+
+    const slotsWrap = document.createElement('div');
+    slotsWrap.style.cssText='display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:0;';
+
+    for(let i=0;i<count;i++){
+      const id = sid(side,ri,i);
+      const team = ALL_TEAMS.find(t=>t.id===slots[id]);
+      slotsWrap.appendChild(makeSlot(id, team, false));
+    }
+    col.appendChild(slotsWrap);
+    div.appendChild(col);
+
+    if(ri < counts.length-1){
+      const conn = makeConn(count, reversed);
+      div.appendChild(conn);
+    }
+  });
+
+  return div;
+}
+
+function buildCenter(){
+  const div = document.createElement('div');
+  div.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0 6px;flex-shrink:0;';
+
+  const trophy = document.createElement('div');
+  trophy.className='trophy-box';
+  trophy.innerHTML='<div class="trophy-icon">🏆</div><div class="trophy-lbl">冠军</div>';
+  div.appendChild(trophy);
+
+  const slotsDiv = document.createElement('div');
+  slotsDiv.style.cssText='display:flex;flex-direction:column;gap:4px;';
+
+  ['final_L','final_R'].forEach((id,i)=>{
+    const team = ALL_TEAMS.find(t=>t.id===slots[id]);
+    slotsDiv.appendChild(makeSlot(id, team, true));
+  });
+  div.appendChild(slotsDiv);
+
+  return div;
+}
+
+function makeSlot(id, team, isWinner){
+  const slot = document.createElement('div');
+  slot.className='slot'+(team?' has-team':'')+(isWinner?' winner':'');
+  slot.dataset.sid = id;
+  slot.style.cssText = 'width:72px;height:26px;margin:1px 0;';
+
+  if(team){
+    slot.style.display='flex';slot.style.alignItems='center';slot.style.paddingLeft='4px';
+    const img=document.createElement('img');img.src=team.flag;img.alt=team.name;
+    img.style.cssText='width:28px;height:18px;object-fit:cover;border-radius:2px;flex-shrink:0;';
+    const nm=document.createElement('span');nm.className='sname';nm.textContent=team.name;
+    slot.appendChild(img);slot.appendChild(nm);
+  } else {
+    slot.style.display='flex';slot.style.alignItems='center';slot.style.justifyContent='center';
+    slot.textContent='+';
+  }
+
+  slot.addEventListener('dragover',e=>{e.preventDefault();slot.classList.add('drag-over');});
+  slot.addEventListener('dragleave',()=>slot.classList.remove('drag-over'));
+  slot.addEventListener('drop',e=>{
+    e.preventDefault();slot.classList.remove('drag-over');
+    if(!dragging)return;
+    if(dragSrc && dragSrc!==id){
+      delete slots[dragSrc];
+    }
+    slots[id]=dragging;
+    dragging=null;dragSrc=null;
+    buildLayout();buildPool();
+  });
+  slot.addEventListener('dblclick',()=>{
+    if(slots[id]){delete slots[id];buildLayout();buildPool();}
+  });
+  slot.addEventListener('dragstart',e=>{
+    if(slots[id]){
+      dragging=slots[id];dragSrc=id;
+      setTimeout(()=>slot.classList.add('dragging'),0);
+    }
+  });
+  if(team) slot.draggable=true;
+  return slot;
+}
+
+function makeConn(topCount, reversed){
+  const pairs = topCount/2;
+  const slotH = 28;
+  const totalH = topCount * slotH;
+  const w = 12;
+  const div = document.createElement('div');
+  div.style.cssText=`width:${w}px;flex-shrink:0;padding-top:18px;`;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width',w);svg.setAttribute('height',totalH);svg.style.overflow='visible';
+
+  for(let p=0;p<pairs;p++){
+    const y1 = p*2*slotH + slotH*0.5;
+    const y2 = p*2*slotH + slotH*1.5;
+    const ym = (y1+y2)/2;
+    const x1 = reversed ? w : 0;
+    const x2 = reversed ? 0 : w;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${x1},${y1} H${w/2} V${y2} H${x1} M${w/2},${ym} H${x2}`);
+    path.setAttribute('stroke','rgba(255,255,255,0.2)');
+    path.setAttribute('stroke-width','1');
+    path.setAttribute('fill','none');
+    svg.appendChild(path);
+  }
+  div.appendChild(svg);
+  return div;
+}
+
+function buildPool(){
+  const pool = document.getElementById('pool');
+  pool.innerHTML='';
+  const usedIds = new Set(Object.values(slots));
+  ALL_TEAMS.forEach(t=>{
+    if(usedIds.has(t.id))return;
+    const chip=document.createElement('div');
+    chip.className='chip';chip.draggable=true;chip.dataset.tid=t.id;
+    const img=document.createElement('img');img.src=t.flag;img.alt=t.name;
+    const nm=document.createElement('span');nm.textContent=t.name;
+    chip.appendChild(img);chip.appendChild(nm);
+    chip.addEventListener('dragstart',()=>{
+      dragging=t.id;dragSrc=null;
+      chip.classList.add('dragging');
+      setTimeout(()=>chip.classList.remove('dragging'),0);
+    });
+    pool.appendChild(chip);
+  });
+}
+
+function resetAll(){slots={};buildLayout();buildPool();}
+
+buildLayout();
+buildPool();
+
+document.addEventListener('dragstart',e=>{
+  const slot=e.target.closest('[data-sid]');
+  if(slot&&slots[slot.dataset.sid]){
+    dragging=slots[slot.dataset.sid];dragSrc=slot.dataset.sid;
+  }
+});
+</script>
